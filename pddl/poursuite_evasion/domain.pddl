@@ -11,6 +11,7 @@
 (:predicates
     (onto ?cops - cops ?case - case)
     (nextto ?caseA - case ?caseB - case ?link - link)
+
     (emptycase ?case)
     (occupiedcase ?case)
 
@@ -19,6 +20,7 @@
     (istop ?link - link)
     (isbottom ?link - link)
     (isalone ?cops - cops)
+    (isnotalone ?cops - cops)
 
 ;    (onstack ?case - case ?link - link)
 )
@@ -48,6 +50,7 @@
 
     :effect (and 
         (onto ?cops ?goal_case)
+        (not (onto ?cops ?init_case))
 
         (not (emptycase ?goal_case))
         (occupiedcase ?goal_case)
@@ -88,8 +91,11 @@
 
     :effect (and 
         (onto ?cops ?goal_case)
+        (not (onto ?cops ?init_case))
+
         
         (not (isalone ?cops))
+        (isnotalone ?cops)
 
         (emptycase ?init_case)
         (not (occupiedcase ?init_case))
@@ -103,45 +109,70 @@
     )       
 )
 
-; (:action move_not_alone_to_alone
-;     :parameters (?init_case - case ?goal_case - case ?link - link ?top_link_a - link ?bottom_link_a - link ?top_link_b - link ?bottom_link_b - link ?cops - cops)
+(:action move_not_alone_to_alone
+    :parameters (?init_case - case ?goal_case - case ?link - link ?top_link_a - link ?bottom_link_a - link ?top_link_b - link ?bottom_link_b - link ?cops - cops)
 
-;     :precondition (and 
-;         (onto ?cops ?init_case)
-;         (isalone ?cops)
+    :precondition (and 
+        (onto ?cops ?init_case)
+        (isnotalone ?cops)
         
-;         (occupiedcase ?goal_case)
-;         (nextto ?init_case ?goal_case ?link)
+        (emptycase ?goal_case)
+        (nextto ?init_case ?goal_case ?link)
 
-; ;        (onstack ?init_case ?link)
-; ;        (onstack ?goal_case ?link)
+        (ontop ?init_case ?link ?top_link_a)
+        (ontop ?init_case ?bottom_link_a ?link)
 
-;         (istop ?top_link_a)
-;         (isbottom ?bottom_link_a)
+        (ontop ?goal_case ?link ?top_link_b)
+        (ontop ?goal_case ?bottom_link_b ?link)
+    )
 
-;         (ontop ?init_case ?link ?top_link_a)
-;         (ontop ?init_case ?bottom_link_a ?link)
+    :effect (and 
+        (onto ?cops ?goal_case)
+        (not (onto ?cops ?init_case))
 
-;         (ontop ?goal_case ?link ?top_link_b)
-;         (ontop ?goal_case ?bottom_link_b ?link)
-;     )
 
-;     :effect (and 
-;         (onto ?cops ?goal_case)
+        (isalone ?cops)
+        (not (isnotalone ?cops))
+
+        (not (emptycase ?goal_case))
+        (occupiedcase ?goal_case)
+
+;        (not (onstack ?init_case ?link))
+;        (not (onstack ?goal_case ?link))
         
-;         (not (isalone ?cops))
+        (ontop ?init_case ?bottom_link_a ?top_link_a)
+        (ontop ?goal_case ?bottom_link_b ?top_link_b)
+    )       
+)
 
-;         (emptycase ?init_case)
-;         (not (occupiedcase ?init_case))
+(:action move_not_alone_to_not_alone
+    :parameters (?init_case - case ?goal_case - case ?link - link ?top_link_a - link ?bottom_link_a - link ?top_link_b - link ?bottom_link_b - link ?cops - cops)
 
-
-; ;        (not (onstack ?init_case ?link))
-; ;        (not (onstack ?goal_case ?link))
+    :precondition (and 
+        (onto ?cops ?init_case)
+        (isnotalone ?cops)
         
-;         (ontop ?init_case ?bottom_link_a ?top_link_a)
-;         (ontop ?goal_case ?bottom_link_b ?top_link_b)
-;     )       
-; )
+        (occupiedcase ?goal_case)
+        (nextto ?init_case ?goal_case ?link)
+
+        (ontop ?init_case ?link ?top_link_a)
+        (ontop ?init_case ?bottom_link_a ?link)
+
+        (ontop ?goal_case ?link ?top_link_b)
+        (ontop ?goal_case ?bottom_link_b ?link)
+    )
+
+    :effect (and 
+        (onto ?cops ?goal_case)
+        (not (onto ?cops ?init_case))
+
+;        (not (onstack ?init_case ?link))
+;        (not (onstack ?goal_case ?link))
+        
+        (ontop ?init_case ?bottom_link_a ?top_link_a)
+        (ontop ?goal_case ?bottom_link_b ?top_link_b)
+    )       
+)
 
 ; (:action join
     
