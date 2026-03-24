@@ -1,72 +1,78 @@
-(define (problem poursuite-evasion-2)
+(define (problem poursuite-evasion-p003)
 (:domain pursuite)
 
 (:objects
     cops1 cops2 cops3 - cops
     c1 c2 c3 c4 - case
-    a b c top bottom - link
+    a b c - link
 )
 
 (:init
-    (occupiedcase c1)
-    (emptycase c2)
-    (occupiedcase c3)
-    (occupiedcase c4)
+    ; Adjacence
+    (adjacent c1 c2 a)
+    (adjacent c2 c1 a)
+    (adjacent c2 c3 b)
+    (adjacent c3 c2 b)
+    (adjacent c2 c4 c)
+    (adjacent c4 c2 c)
 
-    (nextto c1 c2 a)
-    (nextto c2 c1 a)
+    ; Placement des policiers
+    (on cops1 c1)
+    (single-cop cops1 c1)
+
+    (on cops2 c3)
+    (single-cop cops2 c3)
+
+    (on cops3 c4)
+    (single-cop cops3 c4)
     
-    (nextto c2 c3 b)
-    (nextto c3 c2 b)
+    ; Distinction des policiers (pour empêcher cops-join trivial)
+    (is-different cops1 cops2)
+    (is-different cops1 cops3)
+    (is-different cops2 cops1)
+    (is-different cops2 cops3)
+    (is-different cops3 cops1)
+    (is-different cops3 cops2)
 
-    (nextto c2 c4 c)
-    (nextto c4 c2 c)
-
-    (istop top)
-    (isbottom bottom)
-
-    (onto cops1 c1)
-    (isalone cops1)
-
-    (onto cops2 c3)
-    (isalone cops2)
-
-    (onto cops3 c4)
-    (isalone cops3)
-
-    ; STACK DE C1
-;    (onstack c1 a)
-    (ontop c1 bottom a)
-    (ontop c1 a top)
-
+    ; Arêtes à visiter par case
+    ; c1 : pile simple
+    (in-pile a c1)
+    (istop a c1)
+    (isbottom a c1)
+    (link-needed c1 a)
     
-    ; STACK DE C2
-;    (onstack c2 a)
-;    (onstack c2 b)
-;    (onstack c2 c)
-
-    (ontop c2 bottom a)
-    (ontop c2 a b)
-    (ontop c2 b c)
-    (ontop c2 c top)
-
-    ; STACK DE C3
-;    (onstack c3 c)
-;    (onstack c3 d)
-
-    (ontop c3 bottom b)
-    (ontop c3 b top)
-
-    ; STACK DE C4
-    (ontop c4 bottom c)
-    (ontop c4 c top)
+    ; c2 : pile avec trois liens a(bottom) -> b -> c(top)
+    (in-pile a c2)
+    (in-pile b c2)
+    (in-pile c c2)
+    (isbottom a c2)
+    (istop c c2)
+    (ontop b a c2)
+    (ontop c b c2)
+    (link-needed c2 a)
+    (link-needed c2 b)
+    (link-needed c2 c)
+    
+    ; c3 : pile simple
+    (in-pile b c3)
+    (istop b c3)
+    (isbottom b c3)
+    (link-needed c3 b)
+    
+    ; c4 : pile simple
+    (in-pile c c4)
+    (istop c c4)
+    (isbottom c c4)
+    (link-needed c4 c)
 )
 
 (:goal (and
-    (ontop c1 bottom top)
-    (ontop c2 bottom top)
-    (ontop c3 bottom top)    
-    (ontop c4 bottom top)    
+    (link-visited c1 a)
+    (link-visited c2 a)
+    (link-visited c2 b)
+    (link-visited c2 c)
+    (link-visited c3 b)
+    (link-visited c4 c)
 ))
 
 )

@@ -1,56 +1,51 @@
-(define (problem poursuite-evasion-2)
+(define (problem poursuite-evasion-p001)
 (:domain pursuite)
 
 (:objects
     cops1 - cops
     c1 c2 c3 - case
-    a b top bottom - link
+    a b - link
 )
 
 (:init
-    (occupiedcase c1)
-    (emptycase c2)
-    (emptycase c3)
+    ; Adjacence
+    (adjacent c1 c2 a)
+    (adjacent c2 c1 a)
+    (adjacent c2 c3 b)
+    (adjacent c3 c2 b)
 
-    (nextto c1 c2 a)
-    (nextto c2 c1 a)
+    ; Placement des policiers
+    (on cops1 c1)
+    (single-cop cops1 c1)
+
+    ; Arêtes à visiter par case
+    ; c1 : pile simple avec un seul lien
+    (in-pile a c1)
+    (istop a c1)
+    (isbottom a c1)
+    (link-needed c1 a)
     
-    (nextto c2 c3 b)
-    (nextto c3 c2 b)
-
-    (istop top)
-    (isbottom bottom)
-
-    (onto cops1 c1)
-    (isalone cops1)
-
-    ; STACK DE C1
-;    (onstack c1 a)
-    (ontop c1 bottom a)
-    (ontop c1 a top)
-
+    ; c2 : pile avec deux liens B(bottom) -> C(top)
+    (in-pile a c2)
+    (in-pile b c2)
+    (isbottom a c2)
+    (istop b c2)
+    (ontop b a c2)
+    (link-needed c2 a)
+    (link-needed c2 b)
     
-    ; STACK DE C2
-;    (onstack c2 a)
-;    (onstack c2 b)
-;    (onstack c2 c)
-
-    (ontop c2 bottom a)
-    (ontop c2 a b)
-    (ontop c2 b top)
-
-    ; STACK DE C3
-;    (onstack c3 c)
-;    (onstack c3 d)
-
-    (ontop c3 bottom b)
-    (ontop c3 b top)
+    ; c3 : pile simple avec un seul lien
+    (in-pile b c3)
+    (istop b c3)
+    (isbottom b c3)
+    (link-needed c3 b)
 )
 
 (:goal (and
-    (ontop c1 bottom top)
-    (ontop c2 bottom top)
-    (ontop c3 bottom top)    
+    (link-visited c1 a)
+    (link-visited c2 a)
+    (link-visited c2 b)
+    (link-visited c3 b)
 ))
 
 )
