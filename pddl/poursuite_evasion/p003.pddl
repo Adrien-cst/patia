@@ -35,31 +35,30 @@
     (isalone cops3)
 
     ; STACK DE C1
-;    (onstack c1 a)
     (ontop c1 bottom a)
     (ontop c1 a top)
+    (first c1 bottom)
+    (last c1 top)
 
-    
     ; STACK DE C2
-;    (onstack c2 a)
-;    (onstack c2 b)
-;    (onstack c2 c)
-
     (ontop c2 bottom a)
     (ontop c2 a b)
     (ontop c2 b c)
     (ontop c2 c top)
+    (first c2 bottom)
+    (last c2 top)
 
     ; STACK DE C3
-;    (onstack c3 c)
-;    (onstack c3 d)
-
     (ontop c3 bottom b)
     (ontop c3 b top)
+    (first c3 bottom)
+    (last c3 top)
 
     ; STACK DE C4
     (ontop c4 bottom c)
     (ontop c4 c top)
+    (first c4 bottom)
+    (last c4 top)
 )
 
 (:goal (and
