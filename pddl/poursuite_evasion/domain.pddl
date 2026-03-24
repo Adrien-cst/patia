@@ -16,6 +16,7 @@
     (ontop ?above - link ?below - link ?case - case)
     (istop ?link - link ?case - case)
     (isbottom ?link - link ?case - case)
+    (emptystack ?case - case)
     
     (link-needed ?case - case ?link - link)
     (link-visited ?case - case ?link - link)
@@ -26,325 +27,179 @@
     (is-different ?cop1 - cops ?cop2 - cops)
 )
 
-;;; Un policier SEUL peut traverser une arête SEULEMENT si c'est le seul lien de sa case source
-;;; Cas 1: Le lien est aussi seul dans la destination
-
-(:action move-cop-alone-to-single
+;; 1. Un policier seul se déplace : il DOIT être sur le dernier lien de la pile
+(:action move-single-cop
     :parameters (?cop - cops ?from ?to - case ?link - link)
-    
-    :precondition (and
+    :precondition (and 
         (on ?cop ?from)
         (single-cop ?cop ?from)
         (adjacent ?from ?to ?link)
-        (in-pile ?link ?from)
+        (link-needed ?from ?link)
+        (link-needed ?to ?link)
         (istop ?link ?from)
         (isbottom ?link ?from)
-        (in-pile ?link ?to)
-        (istop ?link ?to)
-        (isbottom ?link ?to)
-        (link-needed ?from ?link)
     )
-    
-    :effect (and
+    :effect (and 
         (not (on ?cop ?from))
         (on ?cop ?to)
         
-        (not (in-pile ?link ?from))
-        (not (istop ?link ?from))
-        (not (isbottom ?link ?from))
-        (not (in-pile ?link ?to))
-        (not (istop ?link ?to))
-        (not (isbottom ?link ?to))
-        
+        (not (single-cop ?cop ?from))
+        (single-cop ?cop ?to)
+
         (not (link-needed ?from ?link))
+        (not (link-needed ?to ?link))
         (link-visited ?from ?link)
         (link-visited ?to ?link)
-        (single-cop ?cop ?to)
-        (not (single-cop ?cop ?from))
     )
 )
 
-
-;;; Cas 2: Le lien est au fond d'une pile multi-liens dans la destination
-;;; Après suppression, le lien au-dessus devient le nouveau fond
-
-(:action move-cop-alone-to-bottom-multi
-    :parameters (?cop - cops ?from ?to - case ?link ?above - link)
-    
-    :precondition (and
-        (on ?cop ?from)
-        (single-cop ?cop ?from)
+;; 2. Un policier accompagné se déplace : il peut partir même s'il reste plusieurs liens, 
+;;    car un autre policier reste pour empêcher la recontamination.
+(:action move-cop-leaving-group
+    :parameters (?cop-leaving ?cop-staying - cops ?from ?to - case ?link - link)
+    :precondition (and 
+        (on ?cop-leaving ?from)
+        (with-company ?cop-leaving ?from)
+        (on ?cop-staying ?from)
+        (with-company ?cop-staying ?from)
+        (is-different ?cop-leaving ?cop-staying)
+        
         (adjacent ?from ?to ?link)
-        (in-pile ?link ?from)
+        (link-needed ?from ?link)
+        (link-needed ?to ?link)
+    )
+    :effect (and 
+        (not (on ?cop-leaving ?from))
+        (on ?cop-leaving ?to)
+        
+        (not (with-company ?cop-leaving ?from))
+        (single-cop ?cop-leaving ?to)
+        
+        (not (with-company ?cop-staying ?from))
+        (single-cop ?cop-staying ?from)
+
+        (not (link-needed ?from ?link))
+        (not (link-needed ?to ?link))
+        (link-visited ?from ?link)
+        (link-visited ?to ?link)
+    )
+)
+
+;; Actions de gestion de la pile (s'activent asynchronement dès qu'un lien a été "link-visited")
+(:action clear-stack-single
+    :parameters (?case - case ?link - link)
+    :precondition (and 
+        (link-visited ?case ?link)
+        (istop ?link ?case)
+        (isbottom ?link ?case)
+    )
+    :effect (and 
+        (not (in-pile ?link ?case))
+        (not (istop ?link ?case))
+        (not (isbottom ?link ?case))
+        (not (link-visited ?case ?link))
+        (emptystack ?case)
+    )
+)
+
+(:action clear-stack-top
+    :parameters (?case - case ?link ?below - link)
+    :precondition (and 
+        (link-visited ?case ?link)
+        (istop ?link ?case)
+        (ontop ?link ?below ?case)
+    )
+    :effect (and 
+        (not (in-pile ?link ?case))
+        (not (istop ?link ?case))
+        (not (ontop ?link ?below ?case))
+        (istop ?below ?case)
+        (not (link-visited ?case ?link))
+    )
+)
+
+(:action clear-stack-bottom
+    :parameters (?case - case ?link ?above - link)
+    :precondition (and 
+        (link-visited ?case ?link)
+        (isbottom ?link ?case)
+        (ontop ?above ?link ?case)
+    )
+    :effect (and 
+        (not (in-pile ?link ?case))
+        (not (isbottom ?link ?case))
+        (not (ontop ?above ?link ?case))
+        (isbottom ?above ?case)
+        (not (link-visited ?case ?link))
+    )
+)
+
+(:action clear-stack-middle
+    :parameters (?case - case ?link ?above ?below - link)
+    :precondition (and 
+        (link-visited ?case ?link)
+        (ontop ?above ?link ?case)
+        (ontop ?link ?below ?case)
+    )
+    :effect (and 
+        (not (in-pile ?link ?case))
+        (not (ontop ?above ?link ?case))
+        (not (ontop ?link ?below ?case))
+        (ontop ?above ?below ?case)
+        (not (link-visited ?case ?link))
+    )
+)
+
+;; Un policier rejoint un autre sur une case adjacente.
+;; Ce mouvement est possible même si le lien a déjà été "visité", mais il
+;; doit cependant respecter la règle de non-recontamination.
+
+;; Cas 1: Le policier qui bouge est seul et quitte une case sécurisée.
+(:action cops-join-from-secured
+    :parameters (?cop-move ?cop-at-dest - cops ?from ?to - case ?link - link)
+    :precondition (and 
+        (on ?cop-move ?from)
+        (single-cop ?cop-move ?from)
+        (on ?cop-at-dest ?to)
+        (adjacent ?from ?to ?link)
+        (is-different ?cop-move ?cop-at-dest)
         (istop ?link ?from)
         (isbottom ?link ?from)
-        (in-pile ?link ?to)
-        (isbottom ?link ?to)
-        (ontop ?above ?link ?to)
-        (link-needed ?from ?link)
     )
-    
-    :effect (and
-        (not (on ?cop ?from))
-        (on ?cop ?to)
-        
-        (not (in-pile ?link ?from))
-        (not (istop ?link ?from))
-        (not (isbottom ?link ?from))
-        
-        (not (in-pile ?link ?to))
-        (not (isbottom ?link ?to))
-        (not (ontop ?above ?link ?to))
-        (isbottom ?above ?to)
-        
-        (not (link-needed ?from ?link))
-        (link-visited ?from ?link)
-        (link-visited ?to ?link)
-        (single-cop ?cop ?to)
-        (not (single-cop ?cop ?from))
+    :effect (and 
+        (not (on ?cop-move ?from))
+        (on ?cop-move ?to)
+        (not (single-cop ?cop-move ?from))
+        (single-cop ?cop-move ?to)
     )
 )
 
-
-;;; Un policier EN GROUPE traverse depuis le TOP d'une pile
-;;; Le lien au-dessous devient le nouveau TOP en source
-
-(:action move-cop-with-company-from-top-to-single
-    :parameters (?cop - cops ?from ?to - case ?link ?below - link)
-    
+;; Cas 2: Le policier qui bouge est en groupe et laisse un coéquipier derrière pour garder la case.
+(:action cops-join-leaving-guard
+    :parameters (?cop-move ?cop-guard ?cop-at-dest - cops ?from ?to - case ?link - link)
     :precondition (and
-        (on ?cop ?from)
-        (with-company ?cop ?from)
+        (on ?cop-move ?from)
+        (with-company ?cop-move ?from)
+        (on ?cop-guard ?from)
+        (with-company ?cop-guard ?from)
+        (is-different ?cop-move ?cop-guard)
+
+        (on ?cop-at-dest ?to)
         (adjacent ?from ?to ?link)
-        (in-pile ?link ?from)
-        (istop ?link ?from)
-        (ontop ?link ?below ?from)
-        (in-pile ?link ?to)
-        (istop ?link ?to)
-        (isbottom ?link ?to)
-        (link-needed ?from ?link)
+        (is-different ?cop-move ?cop-at-dest)
     )
-    
     :effect (and
-        (not (on ?cop ?from))
-        (on ?cop ?to)
-        
-        (not (in-pile ?link ?from))
-        (not (istop ?link ?from))
-        (not (ontop ?link ?below ?from))
-        (istop ?below ?from)
-        
-        (not (in-pile ?link ?to))
-        (not (istop ?link ?to))
-        (not (isbottom ?link ?to))
-        
-        (not (link-needed ?from ?link))
-        (link-visited ?from ?link)
-        (link-visited ?to ?link)
-        (single-cop ?cop ?to)
-        (not (single-cop ?cop ?from))
+        (not (on ?cop-move ?from))
+        (on ?cop-move ?to)
+        (not (with-company ?cop-move ?from))
+        (single-cop ?cop-move ?to)
+        (not (with-company ?cop-guard ?from))
+        (single-cop ?cop-guard ?from)
     )
 )
 
-
-(:action move-cop-with-company-from-top-to-bottom-multi
-    :parameters (?cop - cops ?from ?to - case ?link ?below-from ?above-to - link)
-    
-    :precondition (and
-        (on ?cop ?from)
-        (with-company ?cop ?from)
-        (adjacent ?from ?to ?link)
-        (in-pile ?link ?from)
-        (istop ?link ?from)
-        (ontop ?link ?below-from ?from)
-        (in-pile ?link ?to)
-        (isbottom ?link ?to)
-        (ontop ?above-to ?link ?to)
-        (link-needed ?from ?link)
-    )
-    
-    :effect (and
-        (not (on ?cop ?from))
-        (on ?cop ?to)
-        
-        (not (in-pile ?link ?from))
-        (not (istop ?link ?from))
-        (not (ontop ?link ?below-from ?from))
-        (istop ?below-from ?from)
-        
-        (not (in-pile ?link ?to))
-        (not (isbottom ?link ?to))
-        (not (ontop ?above-to ?link ?to))
-        (isbottom ?above-to ?to)
-        
-        (not (link-needed ?from ?link))
-        (link-visited ?from ?link)
-        (link-visited ?to ?link)
-        (single-cop ?cop ?to)
-        (not (single-cop ?cop ?from))
-    )
-)
-
-
-(:action move-cop-with-company-from-top-to-top
-    :parameters (?cop - cops ?from ?to - case ?link ?below-from ?below-to - link)
-    
-    :precondition (and
-        (on ?cop ?from)
-        (with-company ?cop ?from)
-        (adjacent ?from ?to ?link)
-        (in-pile ?link ?from)
-        (istop ?link ?from)
-        (ontop ?link ?below-from ?from)
-        (in-pile ?link ?to)
-        (istop ?link ?to)
-        (ontop ?link ?below-to ?to)
-        (link-needed ?from ?link)
-    )
-    
-    :effect (and
-        (not (on ?cop ?from))
-        (on ?cop ?to)
-        
-        (not (in-pile ?link ?from))
-        (not (istop ?link ?from))
-        (not (ontop ?link ?below-from ?from))
-        (istop ?below-from ?from)
-        
-        (not (in-pile ?link ?to))
-        (not (istop ?link ?to))
-        (not (ontop ?link ?below-to ?to))
-        (istop ?below-to ?to)
-        
-        (not (link-needed ?from ?link))
-        (link-visited ?from ?link)
-        (link-visited ?to ?link)
-        (single-cop ?cop ?to)
-        (not (single-cop ?cop ?from))
-    )
-)
-
-
-(:action move-cop-with-company-from-bottom-to-single
-    :parameters (?cop - cops ?from ?to - case ?link ?above - link)
-    
-    :precondition (and
-        (on ?cop ?from)
-        (with-company ?cop ?from)
-        (adjacent ?from ?to ?link)
-        (in-pile ?link ?from)
-        (isbottom ?link ?from)
-        (ontop ?above ?link ?from)
-        (in-pile ?link ?to)
-        (istop ?link ?to)
-        (isbottom ?link ?to)
-        (link-needed ?from ?link)
-    )
-    
-    :effect (and
-        (not (on ?cop ?from))
-        (on ?cop ?to)
-        
-        (not (in-pile ?link ?from))
-        (not (isbottom ?link ?from))
-        (not (ontop ?above ?link ?from))
-        (isbottom ?above ?from)
-        
-        (not (in-pile ?link ?to))
-        (not (istop ?link ?to))
-        (not (isbottom ?link ?to))
-        
-        (not (link-needed ?from ?link))
-        (link-visited ?from ?link)
-        (link-visited ?to ?link)
-        (single-cop ?cop ?to)
-        (not (single-cop ?cop ?from))
-    )
-)
-
-
-(:action move-cop-with-company-from-bottom-to-top
-    :parameters (?cop - cops ?from ?to - case ?link ?above-from ?below-to - link)
-    
-    :precondition (and
-        (on ?cop ?from)
-        (with-company ?cop ?from)
-        (adjacent ?from ?to ?link)
-        (in-pile ?link ?from)
-        (isbottom ?link ?from)
-        (ontop ?above-from ?link ?from)
-        (in-pile ?link ?to)
-        (istop ?link ?to)
-        (ontop ?link ?below-to ?to)
-        (link-needed ?from ?link)
-    )
-    
-    :effect (and
-        (not (on ?cop ?from))
-        (on ?cop ?to)
-        
-        (not (in-pile ?link ?from))
-        (not (isbottom ?link ?from))
-        (not (ontop ?above-from ?link ?from))
-        (isbottom ?above-from ?from)
-        
-        (not (in-pile ?link ?to))
-        (not (istop ?link ?to))
-        (not (ontop ?link ?below-to ?to))
-        (istop ?below-to ?to)
-        
-        (not (link-needed ?from ?link))
-        (link-visited ?from ?link)
-        (link-visited ?to ?link)
-        (single-cop ?cop ?to)
-        (not (single-cop ?cop ?from))
-    )
-)
-
-
-(:action move-cop-with-company-from-middle-to-single
-    :parameters (?cop - cops ?from ?to - case ?link ?above ?below - link)
-    
-    :precondition (and
-        (on ?cop ?from)
-        (with-company ?cop ?from)
-        (adjacent ?from ?to ?link)
-        (in-pile ?link ?from)
-        (ontop ?above ?link ?from)
-        (ontop ?link ?below ?from)
-        (in-pile ?link ?to)
-        (istop ?link ?to)
-        (isbottom ?link ?to)
-        (link-needed ?from ?link)
-    )
-    
-    :effect (and
-        (not (on ?cop ?from))
-        (on ?cop ?to)
-        
-        (not (in-pile ?link ?from))
-        (not (ontop ?above ?link ?from))
-        (not (ontop ?link ?below ?from))
-        (ontop ?above ?below ?from)
-        
-        (not (in-pile ?link ?to))
-        (not (istop ?link ?to))
-        (not (isbottom ?link ?to))
-        
-        (not (link-needed ?from ?link))
-        (link-visited ?from ?link)
-        (link-visited ?to ?link)
-        (single-cop ?cop ?to)
-        (not (single-cop ?cop ?from))
-    )
-)
-
-;;; Deux policiers seuls et DIFFÉRENTS sur la même case se regroupent
-;;; Chacun cesse d'être seul et gagne le statut "with-company"
-
-(:action cops-join
+(:action cops-group
     :parameters (?cop1 ?cop2 - cops ?case - case)
-    
     :precondition (and
         (on ?cop1 ?case)
         (on ?cop2 ?case)
@@ -352,7 +207,6 @@
         (single-cop ?cop2 ?case)
         (is-different ?cop1 ?cop2)
     )
-    
     :effect (and
         (not (single-cop ?cop1 ?case))
         (with-company ?cop1 ?case)
@@ -361,19 +215,15 @@
     )
 )
 
-;;; Un nouveau policier rejoint un groupe existant sur une case
-;;; Le policier perd son statut de "seul" et gagne "with-company"
-
 (:action cop-joins-existing-group
     :parameters (?cop-new - cops ?cop-group - cops ?case - case)
-    
     :precondition (and
         (on ?cop-new ?case)
         (on ?cop-group ?case)
         (single-cop ?cop-new ?case)
         (with-company ?cop-group ?case)
+        (is-different ?cop-new ?cop-group)
     )
-    
     :effect (and
         (not (single-cop ?cop-new ?case))
         (with-company ?cop-new ?case)

@@ -18,10 +18,10 @@
 
     ; États des cases
     (on cops1 c1)
-    (single-cop cops1 c1)
+    (with-company cops1 c1)
     
     (on cops2 c1)
-    (single-cop cops2 c1)
+    (with-company cops2 c1)
     
     ; Distinction des policiers (pour empêcher cops-join trivial)
     (is-different cops1 cops2)
@@ -60,12 +60,10 @@
 )
 
 (:goal (and
-    (link-visited c1 a)
-    (link-visited c2 a)
-    (link-visited c2 b)
-    (link-visited c2 c)
-    (link-visited c3 b)
-    (link-visited c4 c)
+    (emptystack c1)
+    (emptystack c2)
+    (emptystack c3)
+    (emptystack c4)
 ))
 
 )

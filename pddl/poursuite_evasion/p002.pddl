@@ -49,10 +49,9 @@
 )
 
 (:goal (and
-    (link-visited c1 a)
-    (link-visited c2 a)
-    (link-visited c2 b)
-    (link-visited c3 b)
+    (emptystack c1)
+    (emptystack c2)
+    (emptystack c3)
 ))
 
 )
