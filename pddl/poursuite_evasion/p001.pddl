@@ -1,5 +1,5 @@
-(define (problem poursuite-evasion-p001)
-(:domain pursuite)
+(define (problem pursuit-evasion-p001)
+(:domain pursuit)
 
 (:objects
     cops1 - cops
