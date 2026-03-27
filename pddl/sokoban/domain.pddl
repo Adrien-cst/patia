@@ -16,6 +16,8 @@
     (empty_case ?case - case)
 
     (guard_at ?case - case)
+
+    (safe_target ?case - case)
 )
 
 
@@ -48,6 +50,8 @@
 
             (box_at ?middle)
             (guard_at ?from)
+
+            (safe_target ?to)
         )
         :effect (and 
             (not (guard_at ?from))

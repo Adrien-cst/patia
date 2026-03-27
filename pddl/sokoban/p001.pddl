@@ -29,6 +29,10 @@
 
     (adjacent c7 c6 L)
 
+    (safe_target c3)
+    (safe_target c6)
+    (safe_target c7)
+    
     (empty_case c2)
     (empty_case c3)
     (empty_case c4)

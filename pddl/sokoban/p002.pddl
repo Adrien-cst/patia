@@ -88,6 +88,32 @@
     (adjacent c_7_5 c_7_6 D) (adjacent c_7_6 c_7_5 U)
     (adjacent c_7_6 c_7_7 D) (adjacent c_7_7 c_7_6 U)
 
+    ;; cases safe
+    (safe_target c_2_3)
+    (safe_target c_3_3)
+    (safe_target c_2_4)
+    (safe_target c_3_4)
+    (safe_target c_4_4)
+    (safe_target c_5_4)
+    (safe_target c_6_4)
+    (safe_target c_2_5)
+    (safe_target c_3_5)
+    (safe_target c_4_5)
+    (safe_target c_5_5)
+    (safe_target c_6_5)
+    (safe_target c_7_5)
+    (safe_target c_2_6)
+    (safe_target c_3_6)
+    (safe_target c_5_6)
+    (safe_target c_6_6)
+    (safe_target c_7_6)
+    (safe_target c_2_7)
+    (safe_target c_3_7)
+    (safe_target c_4_7)
+    (safe_target c_5_7)
+    (safe_target c_6_7)
+
+
     ;; ==========================================
     ;; 3. ETAT INITIAL
     ;; ==========================================
