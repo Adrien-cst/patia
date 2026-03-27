@@ -2,24 +2,23 @@ package parsers;
 
 import com.google.gson.Gson;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class JsonToPDDL {
 
-    private File file;
+    public static PddlProblem readProblem(String fileName) {
 
-    public JsonToPDDL(String file) {
-        this.file = new File(file);
-    }
+        Path path = Path.of("config",fileName);
 
-    public static PddlProblem readProblem(String filePath) {
+        if(!Files.exists(path)){
+            throw new IllegalArgumentException("Fichier JSON introuvable");
+        }
 
         Gson gson = new Gson();
 
-        try (FileReader reader = new FileReader(filePath)) {
+        try (Reader reader = Files.newBufferedReader(path)) {
 
             PddlProblem problem = gson.fromJson(reader, PddlProblem.class);
             return problem;
