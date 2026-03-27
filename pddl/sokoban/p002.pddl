@@ -26,7 +26,7 @@
     ;; 1. ADJACENCES HORIZONTALES (Left / Right)
     ;; ==========================================
     (adjacent c_2_2 c_3_2 R) (adjacent c_3_2 c_2_2 L)
-
+    
     (adjacent c_2_3 c_3_3 R) (adjacent c_3_3 c_2_3 L)
 
     (adjacent c_2_4 c_3_4 R) (adjacent c_3_4 c_2_4 L)
