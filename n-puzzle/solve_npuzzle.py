@@ -68,57 +68,92 @@ def solve_dfs(open : List[Node]) -> Solution:
     return current.get_path()
 
 
-def solve_astar(open : List[Node], visited_set = []) -> Solution:
-    '''Solve the puzzle using the A* algorithm'''
-    if not open:
-        return None
+def find_best_state(open_dict: dict, goal_state: State) -> tuple:
+    ''' Trying to find the path with the lowest score '''
+    best_f = float('inf')
+    best_state = None
 
-    current = open.pop(0)
-    dimension = int(math.sqrt(len(current.get_state())))
+    for state, node in open_dict.items():
+        g = len(node.get_path())  # Cost of followed path
+        h = heuristic(state, goal_state)  # Estimated cost
+        f = g + h
+
+        if f < best_f:
+            best_f = f
+            best_state = state
+
+    return best_state
+
+def solve_astar(open_list: List[Node]) -> Solution:
+    '''Solve the puzzle using the formal A* algorithm'''
+
+    dimension = int(math.sqrt(len(open_list[0].get_state())))
     goal_state = create_goal(dimension)
 
-    if is_goal(current.get_state(), goal_state):
-        return current.get_path()
+    # CLOSED stores explored nodes
+    closed_list = {}
 
-    visited_set.append(current)
+    open_dict = {tuple(open_list[0].get_state()): open_list[0]}
 
-    children = get_children(current.get_state(), [UP, DOWN, LEFT, RIGHT], dimension)
-    for tuple in children:
+    while open_dict:
+        # Remove from OPEN and place on CLOSED a node n for which f is minimum.
+        n_state = find_best_state(open_dict, goal_state)
+        n = open_dict.pop(n_state)
+        closed_list[n_state] = n
 
-        for opened_node_index in range(len(open)):
-            if tuple[0] == open[opened_node_index].get_state() and current.cost + 1 < open[opened_node_index].cost:
-                open[opened_node_index].cost = current.cost + 1
-                open[opened_node_index].parent = current
-                break
+        # If n is a goal node, exit successfully
+        if is_goal(n.get_state(), goal_state):
+            return n.get_path()
 
-        for closed_node in visited_set:
-            if tuple[0] == closed_node.get_state() and current.cost + 1 < closed_node.cost:
-                open.append((closed_node.state, closed_node.move, current.cost + 1 , closed_node.heuristic, current))
-                visited_set.remove(closed_node)
-                break
+        # Otherwise expand n, generating all its successors
+        for child_state, move in get_children(n.get_state(), [UP, DOWN, LEFT, RIGHT], dimension):
+            n_prime_state = tuple(child_state)
+            g_n_prime = len(n.get_path()) + 1  # g(n) + cost(1)
 
-        else:
-            h = heuristic(current.get_state(), goal_state)
-            g = current.cost + 1
-            open.append(Node(tuple[0], tuple[1], g , h , current))
+            # If n' is not already on OPEN or CLOSED
+            if n_prime_state not in open_dict and n_prime_state not in closed_list:
+                n_prime = Node(child_state, move, parent=n)
+                open_dict[n_prime_state] = n_prime
 
-    open.sort(key=lambda node: node.heuristic)
-    return solve_astar(open, visited_set)
+            # If n' is already on OPEN or CLOSED
+            else:
+                existing_node = open_dict.get(n_prime_state) or closed_list.get(n_prime_state)
 
-def heuristic(current_state : State, goal_state : State) -> int:
+                # Check if path yielding the lowest g(n')
+                if g_n_prime < len(existing_node.get_path()):
+                    # Direct its pointers (update parent and move)
+                    existing_node.parent = n
+                    existing_node.move = move
+
+                    # If it was found on CLOSED, reopen it
+                    if n_prime_state in closed_list:
+                        open_dict[n_prime_state] = closed_list.pop(n_prime_state)
+
+    # If OPEN is empty, exit with failure
+    return None
+
+
+def heuristic(current_state: State, goal_state: State) -> int:
     '''Calculate the Manhattan distance of the puzzle'''
-    distance = 0
-    dimension = int(math.sqrt(len(current_state)))
 
-    for row in range(0, dimension):
-        for column in range(0, dimension):
-            val = current_state[row * dimension + column]
-            if val != 0:  # Usually, we don't count the distance for the empty tile
-                goal_index = goal_state.index(val)
-                goal_row = goal_index // dimension
-                goal_col = goal_index % dimension
-                distance += abs(row - goal_row) + abs(column - goal_col)
-    return distance
+    dimension = int(math.sqrt(len(current_state)))
+    dist: int = 0
+
+    for i in range(len(current_state)):
+        val = current_state[i]
+        if val == 0:
+            continue
+
+        x_goal = val % dimension
+        y_goal = val // dimension
+
+        x_reel = i % dimension
+        y_reel = i // dimension
+
+        distance_case = abs(x_reel - x_goal) + abs(y_reel - y_goal)
+        dist += distance_case
+
+    return dist
 
 
 def depth_limited_search(node: Node, limit: int, goal_state: State, moves: List[Move], dimension: int) -> Solution | None:
