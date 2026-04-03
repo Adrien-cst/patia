@@ -11,6 +11,7 @@ mvn install:install-file \
    -Dversion=4.0.0 \
    -Dpackaging=jar \
    -DgeneratePom=true
+   -Djava.net.useSystemProxies=true
  ```  
 Work with maven: mvn clean, mvn compile, mvn test, mvn package
 
@@ -18,7 +19,7 @@ Run with:
 ````
 java --add-opens java.base/java.lang=ALL-UNNAMED \
       -server -Xms2048m -Xmx2048m \
-      -cp "$(mvn dependency:build-classpath -Dmdep.outputFile=/dev/stdout -q):target/test-classes/:target/classes" \
+      -cp "$(mvn dependency:build-classpath -Dmdep.outputFile=/dev/stdout -Djava.net.useSystemProxies=true -q):target/test-classes/:target/classes" \
       sokoban.SokobanMain
 ````
 or (after mvn package)

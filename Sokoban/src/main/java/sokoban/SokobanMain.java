@@ -9,7 +9,7 @@ public class SokobanMain {
     public static void main(String[] args) {
         
         if (args.length != 1) {
-            System.err.println("Usage: java --add-opens java.base/java.lang=ALL-UNNAMED -server -Xms2048m -Xmx2048m sokoban.SokobanMain <testCase> <testCaseInput>");
+            System.err.println("Usage: java --add-opens java.base/java.lang=ALL-UNNAMED -server -Xms2048m -Xmx2048m sokoban.SokobanMain <testCaseInput>");
             System.exit(1);
         }
 
@@ -24,6 +24,6 @@ public class SokobanMain {
 
         System.setProperty("sokoban.solution", solution);
 
-        gameRunner.start();
+        gameRunner.start(4200);
     }
 }
