@@ -74,9 +74,54 @@ public final class SATEncoding {
         // State is a bit vector where the ith bit at 1 corresponds to the ith fluent being true
         final int nb_fluents = problem.getFluents().size();
         //System.out.println(" fluents = " + nb_fluents );
+
+        final int nb_actions = problem.getActions().size();
+
         final BitVector init = problem.getInitialState().getPositiveFluents();
         
         // TO BE DONE!
+
+        for (int i = 0; i < init.size(); i++) {
+            if (init.get(i)) initList.add(List.of(pair(i, 1)));
+            else initList.add(List.of(-pair(i, 1)));
+        }
+
+        List<Action> actions = problem.getActions();
+
+        for (int j = 0; j < actions.size(); j++) {
+            Action action = actions.get(j);
+
+            List<Integer> preconditions = new ArrayList();
+            BitVector preconditionPositiveFluents = action.getPrecondition().getPositiveFluents();
+            BitVector preconditionNegativeFluents = action.getPrecondition().getNegativeFluents();
+
+            BitVector effectPositiveFluents = action.getUnconditionalEffect().getPositiveFluents();
+            BitVector effectNegativeFluents = action.getUnconditionalEffect().getNegativeFluents();
+            List<Integer> effects = new ArrayList<>();
+
+            for (int i = 0; i < nb_fluents; i++) {
+                if (preconditionPositiveFluents.get(i)) preconditions.add(i);
+                if (preconditionNegativeFluents.get(i)) preconditions.add(-i);
+
+                if (effectPositiveFluents.get(i)) {
+                    preconditions.add(i);
+
+                    List<Integer> fluentAddList = addList.get(i);
+                    if (fluentAddList == null) addList.put(i, new ArrayList<>(j + nb_fluents));
+                }
+                if (effectNegativeFluents.get(i)) {
+                    preconditions.add(-i);
+
+                    List<Integer> fluentDelList = delList.get(i);
+                    if (fluentDelList == null) delList.put(i, new ArrayList<>(j + nb_fluents));
+                }
+            }
+
+            actionPreconditionList.add(preconditions);
+
+            actionEffectList.add(effects);
+
+        }
 
         // Makes DIMACS encoding from 1 to steps
         encode(1, steps);
@@ -174,7 +219,12 @@ public final class SATEncoding {
     private void encode(int from, int to) {
         this.currentDimacs.clear();
         
-        // TO BE DONE!
+        // TO BE DONE
+        currentDimacs.addAll(initList);
+
+        for (int i = from; i <= to; i++){
+
+        }
 
         System.out.println("Encoding : successfully done (" + (this.currentDimacs.size()
                 + this.currentGoal.size()) + " clauses, " + to + " steps)");
