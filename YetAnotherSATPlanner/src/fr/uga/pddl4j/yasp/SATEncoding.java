@@ -110,13 +110,12 @@ public final class SATEncoding {
 
                 if (effectPositiveFluents.get(i)) {
                     effects.add(i);
-
-                    addList.computeIfAbsent(i, k -> new ArrayList<>()).add(j + nbFluents);
+                    addList.computeIfAbsent(i, k -> new ArrayList<>()).add(j + nbFluents + 1);
                 }
                 if (effectNegativeFluents.get(i)) {
                     effects.add(-i);
 
-                    delList.computeIfAbsent(i, k -> new ArrayList<>()).add(j + nbFluents);
+                    delList.computeIfAbsent(i, k -> new ArrayList<>()).add(j + nbFluents + 1);
                 }
             }
 
@@ -125,7 +124,7 @@ public final class SATEncoding {
             actionEffectList.add(effects);
             
             for (int i = j + 1; i < actionsSize; i++){
-                actionDisjunctionList.add(List.of(i + nbFluents, j + nbFluents));
+                actionDisjunctionList.add(List.of(i + nbFluents + 1, j + nbFluents + 1));
             }
 
         }
@@ -205,24 +204,13 @@ public final class SATEncoding {
             }
             step = couple[1];
             // This is a positive (asserted) action
-            // Actions are encoded as: actionIndex + nbFluents (e.g., action 0 is nbFluents)
-            if (bitnum >= nb_fluents) {
-                final int actionIndex = bitnum - nb_fluents;
-                // Only extract if it's a valid action (not a fluent)
-                if (actionIndex >= 0 && actionIndex < problem.getActions().size()) {
-                    final Action action = problem.getActions().get(actionIndex);
-                    if (action != null) {
-                        sequence.put(step, action);
-                    }
-                }
+            if (bitnum > nb_fluents) {
+                final Action action = problem.getActions().get(bitnum - nb_fluents - 1);
+                sequence.put(step, action);
             }
         }
-        // Sort steps in ascending order and build the plan
-        List<Integer> sortedSteps = new ArrayList<>(sequence.keySet());
-        sortedSteps.sort(Integer::compareTo);
-        int index = 0;
-        for (Integer s : sortedSteps) {
-            plan.add(index++, sequence.get(s));
+        for (int s = sequence.keySet().size(); s > 0 ; s--) {
+            plan.add(0, sequence.get(s));
         }
         return plan;
     }
@@ -264,7 +252,7 @@ public final class SATEncoding {
     private void encodeStep(int step) {
         // ACTIONS
         for (int i = 0; i < actionsSize; i++) {
-            int pairedAction = pair(i + nbFluents, step);
+            int pairedAction = pair(i + nbFluents + 1, step);
 
             // Préconditions
             for (int prec : actionPreconditionList.get(i)) {

@@ -1,4 +1,4 @@
-(define (domain pursuite)
+(define (domain pursuit)
 
 (:requirements :strips :typing)
 
