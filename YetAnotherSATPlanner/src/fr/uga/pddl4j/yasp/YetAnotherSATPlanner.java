@@ -5,6 +5,7 @@ import fr.uga.pddl4j.parser.DefaultParsedProblem;
 import fr.uga.pddl4j.parser.ErrorManager;
 import fr.uga.pddl4j.parser.Message;
 import fr.uga.pddl4j.parser.Parser;
+import fr.uga.pddl4j.planners.statespace.HSP;
 import fr.uga.pddl4j.problem.DefaultProblem;
 import fr.uga.pddl4j.problem.Problem;
 import fr.uga.pddl4j.problem.State;
@@ -97,16 +98,48 @@ public class YetAnotherSATPlanner extends AbstractStateSpacePlanner {
             solver.setExpectedNumberOfClauses(NBCLAUSES);
             IProblem ip = solver;
 
+            System.out.println("AddClauseToSolver");
+            addDimacsClauseToSolver(sat, solver);
+            System.out.println("AddClauseToSolver done");
+
+
             // Seach starts here!
             boolean doSearch = true;
 
             while (doSearch && !(steps > stepmax)) {
-                
-                // TO BE DONE!
+                System.out.println("Etape " + steps + " :");
+                IVecInt goalVecInt = new VecInt(sat.currentGoal.stream().mapToInt(i -> i).toArray());
+                try {
+                    if(ip.isSatisfiable(goalVecInt)) {
+                        System.out.println("Solution found");
+                        plan = sat.extractPlan(Arrays.stream(solver.model()).boxed().collect(Collectors.toList()), problem);
+                        doSearch = false;
+                    } else {
+                        steps ++;
+                        sat.next();
+                        addDimacsClauseToSolver(sat,solver);
+                    }
+                } catch (TimeoutException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
         return plan;
     }
+
+    private static void addDimacsClauseToSolver(SATEncoding sat, ISolver solver) {
+        for (List<Integer> clause : sat.currentDimacs){
+            VecInt clasueVecInt = new VecInt(clause.size());
+            clasueVecInt.copyTo(clause.stream().mapToInt(i -> i).toArray());
+
+            try {
+                solver.addClause(clasueVecInt);
+            } catch (ContradictionException e) {
+                System.err.println("Contradiction in clause");
+            }
+        }
+    }
+
     public static void main(final String[] args) {
 
         // Checks the number of arguments from the command line
