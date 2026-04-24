@@ -83,7 +83,7 @@ public final class SATEncoding {
         final BitVector init = problem.getInitialState().getPositiveFluents();
         
         
-        for (int i = 0; i < init.size(); i++) {
+        for (int i = 0; i < nbFluents; i++) {
             if (init.get(i)) initList.add(List.of(pair(i, 1)));
             else initList.add(List.of(-pair(i, 1)));
         }
@@ -102,9 +102,7 @@ public final class SATEncoding {
             BitVector effectPositiveFluents = action.getUnconditionalEffect().getPositiveFluents();
             BitVector effectNegativeFluents = action.getUnconditionalEffect().getNegativeFluents();
             List<Integer> effects = new ArrayList<>();
-            
-            BitVector goalPositiveFluents = problem.getGoal().getPositiveFluents();
-            BitVector goalNegativeFluents = problem.getGoal().getNegativeFluents();
+
 
             for (int i = 0; i < nbFluents; i++) {
                 if (preconditionPositiveFluents.get(i)) preconditions.add(i);
@@ -113,18 +111,13 @@ public final class SATEncoding {
                 if (effectPositiveFluents.get(i)) {
                     effects.add(i);
 
-                    List<Integer> fluentAddList = addList.get(i);
-                    if (fluentAddList == null) addList.put(i, new ArrayList<>(j + nbFluents));
+                    addList.computeIfAbsent(i, k -> new ArrayList<>()).add(j + nbFluents);
                 }
                 if (effectNegativeFluents.get(i)) {
                     effects.add(-i);
 
-                    List<Integer> fluentDelList = delList.get(i);
-                    if (fluentDelList == null) delList.put(i, new ArrayList<>(j + nbFluents));
+                    delList.computeIfAbsent(i, k -> new ArrayList<>()).add(j + nbFluents);
                 }
-                
-                if (goalPositiveFluents.get(i)) goalList.add(i);
-                if (goalNegativeFluents.get(i)) goalList.add(-i);
             }
 
             actionPreconditionList.add(preconditions);
@@ -132,10 +125,19 @@ public final class SATEncoding {
             actionEffectList.add(effects);
             
             for (int i = j + 1; i < actionsSize; i++){
-                actionDisjunctionList.add(List.of(-(i + nbFluents), -(j + nbFluents)));
+                actionDisjunctionList.add(List.of(i + nbFluents, j + nbFluents));
             }
-            
+
         }
+
+        BitVector goalPositiveFluents = problem.getGoal().getPositiveFluents();
+        BitVector goalNegativeFluents = problem.getGoal().getNegativeFluents();
+
+        for (int i = 0; i < nbFluents; i++) {
+            if (goalPositiveFluents.get(i)) goalList.add(i);
+            if (goalNegativeFluents.get(i)) goalList.add(-i);
+        }
+
 
         // Makes DIMACS encoding from 1 to steps
         encode(1, steps);
@@ -203,17 +205,28 @@ public final class SATEncoding {
             }
             step = couple[1];
             // This is a positive (asserted) action
-            if (bitnum > nb_fluents) {
-                final Action action = problem.getActions().get(bitnum - nb_fluents - 1);
-                sequence.put(step, action);
+            // Actions are encoded as: actionIndex + nbFluents (e.g., action 0 is nbFluents)
+            if (bitnum >= nb_fluents) {
+                final int actionIndex = bitnum - nb_fluents;
+                // Only extract if it's a valid action (not a fluent)
+                if (actionIndex >= 0 && actionIndex < problem.getActions().size()) {
+                    final Action action = problem.getActions().get(actionIndex);
+                    if (action != null) {
+                        sequence.put(step, action);
+                    }
+                }
             }
         }
-        for (int s = sequence.keySet().size(); s > 0 ; s--) {
-            plan.add(0, sequence.get(s));
+        // Sort steps in ascending order and build the plan
+        List<Integer> sortedSteps = new ArrayList<>(sequence.keySet());
+        sortedSteps.sort(Integer::compareTo);
+        int index = 0;
+        for (Integer s : sortedSteps) {
+            plan.add(index++, sequence.get(s));
         }
         return plan;
     }
-    
+
     // Cantor paring function generates unique numbers
     private static int pair(int num, int step) {
         return (int) (0.5 * (num + step) * (num + step + 1) + step);
@@ -234,7 +247,7 @@ public final class SATEncoding {
         this.currentDimacs.clear();
         
         if (from == 1) currentDimacs.addAll(initList);
-        
+
         for (int i = from; i <= to; i++){
              encodeStep(i);
         }
@@ -285,21 +298,33 @@ public final class SATEncoding {
         
         // AXIOMES
         for (int i = 0; i < nbFluents; i++) {
-            // positifs -> négatifs
-            List<Integer> axiom = List.of(pair(i, step), -pair(i, step+1));
-            for (Integer action : delList.get(i)) {
-                axiom.add(pair(action, step));
+            // Negative frame axiom: if a fluent is true and no deletion action happens, it stays true
+            // (¬fluent_i(t) ∨ fluent_i(t+1) ∨ deletion_actions)
+            List<Integer> axiom = new  ArrayList<>();
+            axiom.add(-pair(i, step));
+            axiom.add(pair(i, step+1));
+            List<Integer> negativeEffects = delList.get(i);
+            if(negativeEffects != null){
+                for (Integer action : negativeEffects) {
+                    axiom.add(pair(action, step));
+                }
             }
-            
             currentDimacs.add(axiom);
-            
-            // négatifs -> positifs
-            axiom = List.of(-pair(i, step), pair(i, step + 1));
-            for (Integer action : addList.get(i)) {
-                axiom.add(pair(action, step));
+
+
+            // Positive frame axiom: if a fluent is false and no addition action happens, it stays false
+            // (fluent_i(t) ∨ ¬fluent_i(t+1) ∨ addition_actions)
+            axiom = new  ArrayList<>();
+            axiom.add(pair(i, step));
+            axiom.add(-pair(i, step+1));
+            List<Integer> postiveEffects = addList.get(i);
+            if(postiveEffects != null){
+                for (Integer action : postiveEffects) {
+                    axiom.add(pair(action, step));
+                }
             }
-            
             currentDimacs.add(axiom);
+
         }
         
         

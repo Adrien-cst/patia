@@ -98,9 +98,7 @@ public class YetAnotherSATPlanner extends AbstractStateSpacePlanner {
             solver.setExpectedNumberOfClauses(NBCLAUSES);
             IProblem ip = solver;
 
-            System.out.println("AddClauseToSolver");
             addDimacsClauseToSolver(sat, solver);
-            System.out.println("AddClauseToSolver done");
 
 
             // Seach starts here!
@@ -129,11 +127,9 @@ public class YetAnotherSATPlanner extends AbstractStateSpacePlanner {
 
     private static void addDimacsClauseToSolver(SATEncoding sat, ISolver solver) {
         for (List<Integer> clause : sat.currentDimacs){
-            VecInt clasueVecInt = new VecInt(clause.size());
-            clasueVecInt.copyTo(clause.stream().mapToInt(i -> i).toArray());
-
+            int[] literals = clause.stream().mapToInt(Integer::intValue).toArray();
             try {
-                solver.addClause(clasueVecInt);
+                solver.addClause(new VecInt(literals));
             } catch (ContradictionException e) {
                 System.err.println("Contradiction in clause");
             }
