@@ -88,7 +88,9 @@ public final class SATEncoding {
 
         List<Action> actions = problem.getActions();
 
-        for (int j = 0; j < actions.size(); j++) {
+
+        int actionsSize = actions.size();
+        for (int j = 0; j < actionsSize; j++) {
             Action action = actions.get(j);
 
             List<Integer> preconditions = new ArrayList();
@@ -98,6 +100,9 @@ public final class SATEncoding {
             BitVector effectPositiveFluents = action.getUnconditionalEffect().getPositiveFluents();
             BitVector effectNegativeFluents = action.getUnconditionalEffect().getNegativeFluents();
             List<Integer> effects = new ArrayList<>();
+            
+            BitVector goalPositiveFluents = problem.getGoal().getPositiveFluents();
+            BitVector goalNegativeFluents = problem.getGoal().getNegativeFluents();
 
             for (int i = 0; i < nb_fluents; i++) {
                 if (preconditionPositiveFluents.get(i)) preconditions.add(i);
@@ -115,12 +120,19 @@ public final class SATEncoding {
                     List<Integer> fluentDelList = delList.get(i);
                     if (fluentDelList == null) delList.put(i, new ArrayList<>(j + nb_fluents));
                 }
+                
+                if (goalPositiveFluents.get(i)) goalList.add(i);
+                if (goalNegativeFluents.get(i)) goalList.add(-i);
             }
 
             actionPreconditionList.add(preconditions);
 
             actionEffectList.add(effects);
-
+            
+            for (int i = j + 1; i < actionsSize; i++){
+                actionDisjunctionList.add(List.of(-(i + nb_fluents), -(j + nb_fluents)));
+            }
+            
         }
 
         // Makes DIMACS encoding from 1 to steps
