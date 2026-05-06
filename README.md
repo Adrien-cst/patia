@@ -2,7 +2,17 @@
 
 Ce projet met en œuvre et compare différentes approches de planification et de recherche en intelligence artificielle, appliquées à des problèmes classiques comme le Taquin, les Tours de Hanoï et le Sokoban.
 
-## Liste des Rendus
+### 0. Prérequis
+
+Installer Java 21
+```bash
+sudo apt install openjdk-21-jre-headless 
+```
+
+Installer Maven : 
+```bash
+sudo apt install maven
+```
 
 ### 1. Recherche dans un Espace d'États : Le Taquin
 
