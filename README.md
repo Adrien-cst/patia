@@ -116,8 +116,8 @@ mvn install:install-file -Dfile=./pddl4j-4.0.0.jar -DgroupId=fr.uga -DartifactId
 # 2. Compiler le projet
 mvn compile -Djava.net.useSystemProxies=true
 
-# 3. Lancer le serveur (choisir un fichier de test dans le dossier Sokoban/config)
-java --add-opens java.base/java.lang=ALL-UNNAMED -server -Xms2048m -Xmx2048m -cp "$(mvn dependency:build-classpath -Dmdep.outputFile=/dev/stdout -Djava.net.useSystemProxies=true -q):target/test-classes/:target/classes" sokoban.SokobanMain CHEMIN_VERS_UN_TEST.json
+# 3. Lancer le serveur (choisir un fichier de test dans le dossier Sokoban/config, seul le nom du fichier suffit)
+java --add-opens java.base/java.lang=ALL-UNNAMED -server -Xms2048m -Xmx2048m -cp "$(mvn dependency:build-classpath -Dmdep.outputFile=/dev/stdout -Djava.net.useSystemProxies=true -q):target/test-classes/:target/classes" sokoban.SokobanMain NOM_DU_TEST.json
 ```
 L'application sera ensuite accessible à l'adresse `http://[IP_VM]:4200`.
 
