@@ -12,8 +12,14 @@ t1 t2 t3 t4 - tower
     (on c b)
     (on b a)
     (ontower a t1)
+    (ontower b t1)
+    (ontower c t1)
+    (ontower d t1)
+    (ontable a) 
 
-    (smaller a b)
+    (smaller b a)
+    (smaller c b)
+    (smaller d c)
 
     (towerempty t2)
     (towerempty t3)
