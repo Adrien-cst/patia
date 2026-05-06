@@ -4,9 +4,14 @@ Ce projet met en œuvre et compare différentes approches de planification et de
 
 ### 0. Prérequis
 
-Installer Java 21
+Installer Java 21 (JRE)
 ```bash
 sudo apt install openjdk-21-jre-headless 
+```
+
+Installer Java 21 (JDK)
+```bash
+sudo apt install openjdk-21-jdk-headless
 ```
 
 Installer Maven : 
