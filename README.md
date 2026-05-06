@@ -48,6 +48,11 @@ Le graphique ci-dessous illustre les performances relatives de chaque méthode d
 
 Modélisation de problèmes classiques avec le langage PDDL (Planning Domain Definition Language).
 
+Un script de lancement automatique est fourni pour résoudre les problèmes pddl : 
+```bash
+./pddlj4_auto.sh 1 <domain.pddl> <problem.pddl> <timeout_sec> <heuristic_id>
+```
+
 #### Tours de Hanoï
 *   **Description :** Problème des Tours de Hanoï avec 3 disques et 3 piquets.
 *   **Fichier Domaine :** `pddl/hanoi_tower/domain.pddl`
