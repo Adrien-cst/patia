@@ -19,7 +19,7 @@ Un générateur de problèmes a été développé pour créer des grilles de taq
 
 ```bash
 # Pour utiliser le générateur, exécutez la commande suivante :
-python3 generate_npuzzle.py -s [taille du puzzle] -ml [longueur max de résolution] -n [nombre de puzzles] -v [verbosité] [répertoire de sortie (. par défaut)]
+python3 generate_npuzzle.py -s [taille du puzzle] -ml [longueur max de résolution] -n [nombre de puzzles] -v [verbosité] [répertoire de sortie (le répertoire doit exister au préalable)]
 ```
 
 #### Encodage
