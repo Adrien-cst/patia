@@ -118,8 +118,7 @@ Mon approche pour implémenter le SATPlanner a été la suivante :
 Pour prouver le bon fonctionnement du SATPlanner, il peut être testé sur les domaines du Taquin ou du Sokoban. Voici un exemple de son exécution sur un problème simple :
 ```bash
 # Commande pour lancer le SATPlanner sur un problème de test
-# [Votre commande ici]
-
+./yetanothersatplanner.sh 
 # Sortie attendue (plan trouvé)
 # [Exemple de sortie ici]
 ```
