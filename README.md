@@ -97,12 +97,14 @@ Pour lancer l'application web depuis la VM PATIA, suivez ces étapes :
 # 1. Installer la dépendance vers PDDL4J : 
 cd Sokoban
 mvn install:install-file -Dfile=./pddl4j-4.0.0.jar -DgroupId=fr.uga -DartifactId=pddl4j -Dversion=4.0.0 -Dpackaging=jar -DgeneratePom=true -Djava.net.useSystemProxies=true
-# [Votre commande de compilation ici, ex: mvn clean install]
 
-# 2. Lancez le serveur web
-# [Votre commande pour lancer le serveur ici, ex: java -jar target/sokoban.jar]
+# 2. Compiler le projet
+mvn compile
+
+# 3. Lancer le serveur (choisir un fichier de test dans le dossier Sokoban/config)
+java --add-opens java.base/java.lang=ALL-UNNAMED -server -Xms2048m -Xmx2048m -cp "$(mvn dependency:build-classpath -Dmdep.outputFile=/dev/stdout -Djava.net.useSystemProxies=true -q):target/test-classes/:target/classes" sokoban.SokobanMain CHEMIN_VERS_UN_TEST.json
 ```
-L'application sera ensuite accessible à l'adresse `http://localhost:8080`.
+L'application sera ensuite accessible à l'adresse `http://[IP_VM]:4200`.
 
 ### 4. SATPlanner
 
