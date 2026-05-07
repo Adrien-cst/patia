@@ -29,12 +29,19 @@ Cette section concerne la résolution du jeu du Taquin à l'aide de plusieurs al
 *   Recherche Best-First avec l'heuristique A* (A* Search)
 *   Recherche en profondeur itérative (Iterative Deepening Depth-First Search)
 
+
+```bash
+# Avant tout, il faut aller dans le répertoire :
+cd n-puzzle
+```
+
 #### Générateur de Taquins
 Un générateur de problèmes a été développé pour créer des grilles de taquin de difficulté croissante (basée sur la taille et le nombre de mélanges).
 
+
 ```bash
 # Pour utiliser le générateur, exécutez la commande suivante :
-python3 generate_npuzzle.py -s [taille du puzzle] -ml [longueur max de résolution] -n [nombre de puzzles] -v [verbosité] [répertoire de sortie (le répertoire doit exister au préalable)]
+python3 generate_npuzzle.py -s [taille du puzzle] -ml [longueur max de résolution] -n [nombre de puzzles] -v [verbosité] ["puzzles" ou autre répertoire de sortie (le répertoire doit exister au préalable)]
 ```
 
 #### Encodage
@@ -63,9 +70,15 @@ Le graphique ci-dessous illustre les performances relatives de chaque méthode d
 
 Modélisation de problèmes classiques avec le langage PDDL (Planning Domain Definition Language).
 
+
+Aller dans le répertoire depuis le répertoire patia: 
+```bash
+cd pddl
+```
+
 Un script de lancement automatique est fourni pour résoudre les problèmes pddl : 
 ```bash
-./pddlj4_auto.sh 1 <domain.pddl> <problem.pddl> <timeout_sec> <heuristic_id>
+./pddl4j_auto.sh 1 <domain.pddl> <problem.pddl> <timeout_sec> <heuristic_id>
 ```
 
 #### Tours de Hanoï
@@ -115,7 +128,7 @@ Une application web pour le jeu du Sokoban, intégrant un planificateur PDDL.
 Pour lancer l'application web depuis la VM PATIA, suivez ces étapes :
 ```bash
 # 1. Installer la dépendance vers PDDL4J : 
-cd Sokoban
+cd Sokoban # depuis le répertoire patia
 mvn install:install-file -Dfile=./pddl4j-4.0.0.jar -DgroupId=fr.uga -DartifactId=pddl4j -Dversion=4.0.0 -Dpackaging=jar -DgeneratePom=true -Djava.net.useSystemProxies=true
 
 # 2. Compiler le projet
@@ -131,14 +144,69 @@ L'application sera ensuite accessible à l'adresse `http://[IP_VM]:4200`.
 Implémentation d'un planificateur basé sur la satisfiabilité booléenne (SAT).
 
 #### Description de l'implémentation
-Mon approche pour implémenter le SATPlanner a été la suivante :
-`[Décrivez ici votre implémentation, en expliquant comment vous avez traduit le problème de planification en une formule SAT, en faisant le lien avec les concepts vus en cours.]`
+Notre approche pour implémenter le SATPlanner a été la suivante :
+`
+Le principe général est le suivant :
+- chaque prédicat (fluent) et chaque action est représenté par une variable booléenne indexée par un pas de temps ;
+- nous utilisons la fonction pair(num, step) pour transformer un couple (identifiant, étape) en un entier unique, ce qui donne la variable SAT correspondante ;
+- les variables de fluents sont numérotées 1..nbFluents, les actions sont numérotées à partir de nbFluents + 1.
+
+Concernant l'encodage :
+- état initial : chaque fluent du problème est transformé en clause unitaire à l'étape 1 dans initList ;
+- préconditions des actions : pour chaque action à l’étape t, on ajoute des clauses ¬action(t) ∨ précondition(t) pour chaque précondition ;
+- effets des actions : pour chaque effet, on ajoute ¬action(t) ∨ effet(t+1) ;
+- contraintes d'inertie : deux axiomes de cadre sont ajoutés pour chaque fluent et chaque pas :
+    - si un fluent est vrai à t, alors il reste vrai à t+1 sauf si une action le supprime ;
+    - si un fluent est faux à t, alors il reste faux à t+1 sauf si une action le rend vrai ;
+- exclusion mutuelle des actions : on génère des clauses ¬a ∨ ¬b pour chaque paire d’actions au même pas, ce qui impose qu’au plus une action se produise par étape ;
+- objectif : les fluents du but sont encodés comme littéraux positifs ou négatifs au dernier pas considéré.
+
+Recherche incrémentale :
+
+- on estime un minimum de pas avec l’heuristique Fast Forward ;
+- on construit l’encodage SAT pour ce nombre de pas en initialisant SATEncoding(problem, steps) ;
+- on ajoute toutes les clauses currentDimacs au solveur SAT ;
+- on teste la satisfaisabilité avec le but currentGoal ; si insatisfiable, on incrémente steps, on appelle sat.next() pour étendre l’encodage, puis on ajoute les nouvelles clauses au solveur.
+
+Extraction de plan :
+
+- quand le solveur renvoie un modèle, on récupère les littéraux vrais ;
+- on décode chaque variable vraie en (num, step) avec unpair(...) ;
+- si le numéro correspond à une action, on la place dans la séquence au pas correspondant.
+`
 
 #### Preuve de fonctionnement
 Pour prouver le bon fonctionnement du SATPlanner, il peut être testé sur les domaines du Taquin ou du Sokoban. Voici un exemple de son exécution sur un problème simple :
+
 ```bash
+# Aller dans le répertoire depuis le répertoire patia :
+cd YetAnotherSATPlanner
+
 # Commande pour lancer le SATPlanner sur un problème de test
 ./yetanothersatplanner.sh 
-# Sortie attendue (plan trouvé)
-# [Exemple de sortie ici]
-```
+# le premier choix à effectuer doit être la compilation du projet lorsque l'on teste pour la première fois
+
+# Pour tester le gripper :
+# chemin du domaine : domain.pddl
+# chemin du problème : p01.pddl
+
+# Pour tester un problème de Taquin :
+# chemin du domaine : ../pddl/taquin/domain.pddl
+# chemin du problème : ../pddl/taquin/pXXX.pddl
+
+# Sortie attendue (plan trouvé) pour le problème 3 du taquin correspondant au niveau suivant :
+t1  t2  t3  t4
+t5  t6      t8
+t9  t10 t7  t11
+t13 t14 t15 t12
+
+# On obtient le résultat suivant
+Solution found
+0: (  move t7 c7 c11) [0] # on bouge t7 en c7
+1: (move t11 c11 c12) [0] # on bouge t11 en c11
+2: (move t12 c12 c16) [0] # on bouge t12 en c12
+
+
+# Pour tester un problème de Sokoban :
+# chemin du domaine : ../pddl/sokoban/domain.pddl
+# chemin du problème : ../pddl/sokoban/pXXX.pddl
